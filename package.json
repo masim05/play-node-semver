@@ -1,0 +1,22 @@
+{
+  "name": "play-node-semver",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo 'no test'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/masim05/play-node-semver.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/masim05/play-node-semver/issues"
+  },
+  "homepage": "https://github.com/masim05/play-node-semver#readme",
+  "dependencies": {
+    "semver": "^6.0.0"
+  }
+}
