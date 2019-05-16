@@ -1,57 +1,51 @@
 const Octokit = require('@octokit/rest')
 const semver = require('semver')
 
-const list  = [
-  'v1.0.0',
-  'v1.0.1-beta.0',
-  'v1.0.1-alpha.1',
-  'v1.0.1',
-  'v1.0.1-alpha.0',
-  'v1.0.2',
-  'v1.1.1',
-  'v1.0.1-rc.0',
-  'v2.0.0',
-  'v1.1.0',
-]
-const sorted = semver.sort(list)
-/*
- * should print
-  [ 'v1.0.0',
-  'v1.0.1-alpha.0',
-  'v1.0.1-alpha.1',
-  'v1.0.1-beta.0',
-  'v1.0.1-rc.0',
-  'v1.0.1',
-  'v1.0.2',
-  'v1.1.0',
-  'v1.1.1',
-  'v2.0.0' ]
-  */
-//console.log(sorted);
+const {OCTOKIT_GITHUB_TOKEN} = process.env
+if (!OCTOKIT_GITHUB_TOKEN) {
+  exitWithMessage('No OCTOKIT_GITHUB_TOKEN env variable set, exiting.')
+}
+
+const argv = require('minimist')(process.argv.slice(2));
+let owner = argv.owner
+const {repo} = argv
+
+if (!owner) {
+  owner = 'plyo'
+}
+if (!repo) {
+  exitWithMessage('No --repo option given, exiting.')
+}
 
 const octokit = new Octokit({
- auth: process.env.GREN_GITHUB_TOKEN
+ auth: process.env.OCTOKIT_GITHUB_TOKEN
 })
-const owner = 'plyo'
-const repo = 'plyo.web'
 
 getReleasesToDiff(octokit, owner, repo).
 then(function({from, to}) {
-  console.log({from, to});
+  console.log(`${from}..${to}`);
 })
 
 async function getReleasesToDiff(octokit, owner, repo) {
-  const res = await getTwoLatestReleases(octokit, owner, repo)
-  const latest = res[0]
-  const prelatest = res[1]
-  const from = calculateReleaseToDiffWith(latest, prelatest)
-  const to = latest
-  return {from, to}
+  try {
+    const {latest, prelatest} = await getTwoLatestReleases(octokit, owner, repo)
+    const from = calculateReleaseToDiffWith(latest, prelatest)
+    const to = latest
+    return {from, to}
+  } catch(e) {
+    exitWithMessage(e)
+  }
 }
 
 function calculateReleaseToDiffWith(latest, prelatest) {
   const latestVer = semver.coerce(latest)
+  if (!latestVer) {
+    throw new Error('semver failed to parse the latest release tag, exiting.')
+  }
   const prelatestVer = semver.coerce(prelatest)
+  if (!prelatestVer) {
+    throw new Error('semver failed to parse the latest but one release tag, exiting.')
+  }
   if (latestVer.major != prelatestVer.major) {
     // major release
     return `v${prelatestVer.major}.${prelatestVer.minor}.0`
@@ -71,11 +65,15 @@ async function getTwoLatestReleases(octokit, owner, repo) {
   })
   const rs = res.data.map(function (r) {return r.name})
   if (rs.length < 2) {
-    console.log('Found less than 2 releases.')
-    process.exit(1);
+    exitWithMessage('Found less than 2 releases.')
   }
   semver.rsort(rs)
   const latest = rs[0]
   const prelatest = rs[1]
-  return [latest, prelatest]
+  return {latest, prelatest}
+}
+
+function exitWithMessage(msg, code) {
+  console.error(msg)
+  process.exit(code || 1)
 }

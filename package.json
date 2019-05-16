@@ -18,6 +18,7 @@
   "homepage": "https://github.com/masim05/play-node-semver#readme",
   "dependencies": {
     "@octokit/rest": "^16.25.3",
+    "minimist": "^1.2.0",
     "semver": "^6.0.0"
   }
 }
